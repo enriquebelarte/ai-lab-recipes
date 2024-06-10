@@ -1,0 +1,40 @@
+name: Mirror Repository
+
+on:
+  push:
+    branches: 
+    - main
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  mirror-repository:
+    if: github.repository == 'containers/ai-lab-recipes'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4.1.6
+        with:
+          fetch-depth: 0
+
+      - uses: pixta-dev/repository-mirroring-action@v1.1.1
+        with:
+          target_repo_url:
+            git@github.com:containers-mirror/ai-lab-recipes.git
+          ssh_private_key:
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Publish Job Results to Slack
+        id: slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "${{ github.workflow }} workflow status: ${{ job.status }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

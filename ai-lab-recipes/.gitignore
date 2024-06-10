@@ -1,0 +1,15 @@
+*.gguf
+*.bin
+*_pycache_*
+port_check.lock
+*build
+models/*
+!models/Makefile
+!models/README.md
+!models/download_hf_models.py
+convert_models/converted_models
+recipes/common/bin/*
+*/.venv/
+training/cloud/examples
+training/instructlab/instructlab
+vector_dbs/milvus/volumes/milvus/*

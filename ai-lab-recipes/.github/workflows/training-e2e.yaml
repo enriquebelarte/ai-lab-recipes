@@ -1,0 +1,155 @@
+name: traning E2E
+
+on:
+  schedule: # schedule the job to run every day at midnight
+    - cron: '0 12 * * *'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/training-e2e.yaml
+      - ./training/**
+  
+  workflow_dispatch:
+
+env:
+  TF_VAR_aws_region: "eu-west-2"
+  TF_VAR_aws_ami_owners: '["309956199498"]'
+  TF_VAR_aws_ami_name: '["*RHEL-9.4*"]'
+  TF_VAR_aws_volume_size: 500
+  TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    if: github.repository == 'containers/ai-lab-recipes' && !contains(github.event.pull_request.labels.*.name, 'hold-tests')
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - arch: amd64
+            aws_image_type: g5.8xlarge
+            image_name: nvidia-bootc
+            aws_ami_architecture: x86_64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.6
+        with:
+          path: main
+
+      - name: Checkout terraform module
+        id: checkout-module
+        uses: actions/checkout@v4.1.6
+        with:
+          repository: containers/terraform-test-environment-module
+          path: terraform-test-environment-module
+          ref: 'main'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.1
+        with:
+          terraform_version: "1.7.5"
+          terraform_wrapper: false
+
+      - name: Init
+        run: terraform init
+        working-directory: terraform-test-environment-module
+
+      - name: Bootstrap
+        id: up
+        run: terraform apply -auto-approve -lock=false
+        working-directory: terraform-test-environment-module
+        env:
+          TF_VAR_aws_instance_type: ${{ matrix.aws_image_type }}
+          TF_VAR_aws_ami_architecture: ${{ matrix.aws_ami_architecture }}
+      
+      - name: Terraform Output
+        id: terraform-output
+        run: |
+          echo "id=$(terraform output id | xargs)" >> $GITHUB_OUTPUT
+          echo "url=$(terraform output host | xargs)" >> $GITHUB_OUTPUT
+          echo "ssh_public_key=$(terraform output ssh_public_key | xargs)" >> $GITHUB_OUTPUT
+          echo "pem_filename=$(terraform output pem_filename | xargs)" >> $GITHUB_OUTPUT
+        working-directory: terraform-test-environment-module
+
+      - name: Ansible Collections
+        run: ansible-galaxy install -r ./tests/provision/requirements.yml
+        working-directory: ./main/training
+
+      - name: Provision
+        run: |
+          ansible-playbook ./main/training/tests/provision/playbook.yml \
+            -i terraform-test-environment-module/hosts.ini \
+            --private-key=terraform-test-environment-module/${{ steps.terraform-output.outputs.pem_filename }} \
+            --extra-vars "image_name=${{ matrix.image_name }}" \
+            --extra-vars "ssh_public_key='${{ steps.terraform-output.outputs.ssh_public_key }}'" \
+            --extra-vars "registry_user=${{ secrets.REGISTRY_USER }}" \
+            --extra-vars "registry_password=${{ secrets.REGISTRY_PASSWORD }}"
+        env:
+          ANSIBLE_CONFIG: ./main/training/tests/ansible.cfg
+
+      - name: Wait for 4 minutes
+        run: sleep 240
+
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3.18
+      #   timeout-minutes: 20
+      #   with:
+      #     detached: true
+      #     limit-access-to-actor: false
+      
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3.18
+        timeout-minutes: 60
+        with:
+          detached: true
+          limit-access-to-actor: false
+
+      - name: Run tests
+        run: |
+          ansible-playbook ./main/training/tests/e2e-tests/playbook.yml \
+            -i terraform-test-environment-module/hosts.ini \
+            --private-key=terraform-test-environment-module/${{ steps.terraform-output.outputs.pem_filename }} \
+            --extra-vars "image_name=${{ matrix.image_name }}" \
+            --extra-vars "ssh_public_key='${{ steps.terraform-output.outputs.ssh_public_key }}'" \
+            --extra-vars "registry_user=${{ secrets.REGISTRY_USER }}" \
+            --extra-vars "registry_password=${{ secrets.REGISTRY_PASSWORD }}"
+        env:
+          ANSIBLE_CONFIG: ./main/training/tests/ansible.cfg
+
+      # This should exist in the final workflow
+      # - name: Setup tmate session
+      #   if: ${{ failure() }}
+      #   uses: mxschmitt/action-tmate@v3.18
+      #   timeout-minutes: 15
+      #   with:
+      #     detached: true
+      #     limit-access-to-actor: false
+
+      - name: Destroy Test Environment
+        id: down
+        if: always()
+        run: terraform destroy -auto-approve -lock=false
+        working-directory: terraform-test-environment-module
+        env:
+          TF_VAR_aws_instance_type: ${{ matrix.aws_image_type }}
+          TF_VAR_aws_ami_architecture: ${{ matrix.aws_ami_architecture }}
+      
+      - name: Publish Job Results to Slack
+        id: slack
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "${{ github.workflow }} workflow status: ${{ job.status }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

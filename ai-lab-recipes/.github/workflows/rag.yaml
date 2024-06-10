@@ -1,0 +1,93 @@
+name: rag
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'recipes/common/Makefile.common'
+      - 'recipes/natural_language_processing/rag/**'
+      - '.github/workflows/rag.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'recipes/common/Makefile.common'
+      - 'recipes/natural_language_processing/rag/**'
+      - '.github/workflows/rag.yaml'
+
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: rag
+
+jobs:
+  rag-build-and-push:
+    if: "!contains(github.event.pull_request.labels.*.name, 'hold-tests')"
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    services:
+      registry:
+        image: registry:2.8.3
+        ports:
+          - 5000:5000
+    steps:
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - uses: actions/checkout@v4.1.6
+
+      - name: Install qemu dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
+      - name: Build Image
+        id: build_image
+        uses: redhat-actions/buildah-build@v2.13
+        with:
+          image: ${{ env.REGISTRY }}/containers/${{ env.IMAGE_NAME }}
+          tags: latest
+          platforms: linux/amd64, linux/arm64
+          containerfiles: ./recipes/natural_language_processing/${{ env.IMAGE_NAME }}/app/Containerfile
+          context: recipes/natural_language_processing/${{ env.IMAGE_NAME }}/app
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        working-directory: ./recipes/natural_language_processing/${{ env.IMAGE_NAME }}
+        run: make install
+
+      - name: Download model
+        working-directory: ./models
+        run: make download-model-granite
+
+      - name: Run Functional Tests
+        shell: bash
+        run: make functional-tests
+        working-directory: ./recipes/natural_language_processing/${{ env.IMAGE_NAME }}
+
+      - name: Login to Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: redhat-actions/podman-login@v1.7
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Image
+        id: push_image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: redhat-actions/push-to-registry@v2.8
+        with:
+          image: ${{ steps.build_image.outputs.image }}
+          tags: ${{ steps.build_image.outputs.tags }}
+          registry: ${{ env.REGISTRY }}

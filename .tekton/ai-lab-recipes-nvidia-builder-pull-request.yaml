@@ -23,14 +23,14 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/ebelarte-tenant/nvidia-ai-lab-recipes/ai-lab-recipes-nvidia-builder:on-pr-{{revision}}
-  - name: output-driver-image
     value: quay.io/redhat-user-workloads/ebelarte-tenant/nvidia-ai-lab-recipes/ai-lab-recipes-nvidia-driver:on-pr-{{revision}}
+  - name: output-image-builder
+    value: quay.io/redhat-user-workloads/ebelarte-tenant/nvidia-ai-lab-recipes/ai-lab-recipes-nvidia-builder:on-pr-{{revision}}
   - name: image-expires-after
     value: 5d
-  - name: dockerfile
+  - name: dockerfile-builder
     value: ai-lab-recipes/training/nvidia-bootc/Containerfile.builder
-  - name: dockerfile-driver
+  - name: dockerfile
     value: ai-lab-recipes/training/nvidia-bootc/Containerfile
   pipelineSpec:
     finally:
@@ -212,12 +212,12 @@ spec:
         workspace: workspace
       - name: git-basic-auth
         workspace: git-auth
-    - name: build-container
+    - name: build-builder
       params:
       - name: IMAGE
-        value: $(params.output-image)
+        value: $(params.output-image-builder)
       - name: DOCKERFILE
-        value: $(params.dockerfile)
+        value: $(params.dockerfile-builder)
       - name: CONTEXT
         value: $(params.path-context)
       - name: HERMETIC
@@ -252,12 +252,12 @@ spec:
       workspaces:
       - name: source
         workspace: workspace
-    - name: build-driver-container
+    - name: build-container
       params:
       - name: IMAGE
-        value: $(params.output-driver-image)
+        value: $(params.output-image)
       - name: DOCKERFILE
-        value: $(tasks.build-container.results.IMAGE_URL)
+        value: $(params.dockerfile)
       - name: CONTEXT
         value: $(params.path-context)
       - name: HERMETIC
@@ -274,7 +274,7 @@ spec:
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
       runAfter:
-      - build-container
+      - build-builder
       taskRef:
         params:
         - name: name

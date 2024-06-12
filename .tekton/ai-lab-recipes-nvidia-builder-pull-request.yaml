@@ -90,6 +90,11 @@ spec:
         path-context
       name: dockerfile
       type: string
+     - default: Containerfile.builder
+      description: Path to the Dockerfile inside the context specified by parameter
+        path-context
+      name: dockerfile-builder
+      type: string
     - default: "false"
       description: Force rebuild image
       name: rebuild

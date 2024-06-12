@@ -90,7 +90,7 @@ spec:
         path-context
       name: dockerfile
       type: string
-     - default: Containerfile.builder
+    - default: Containerfile.builder
       description: Path to the Dockerfile inside the context specified by parameter
         path-context
       name: dockerfile-builder

@@ -212,6 +212,8 @@ spec:
         workspace: git-auth
     - name: build-builder
       params:
+      - name: PLATFORM
+        value: linux/amd64
       - name: IMAGE
         value: $(params.output-image)
       - name: DOCKERFILE

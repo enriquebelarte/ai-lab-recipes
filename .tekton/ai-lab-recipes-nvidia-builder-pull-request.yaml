@@ -32,8 +32,6 @@ spec:
     value: ai-lab-recipes/training/nvidia-bootc/Containerfile.builder
   - name: dockerfile
     value: ai-lab-recipes/training/nvidia-bootc/Containerfile
-  - name: build-args
-    value: ["DRIVER_TOOLKIT_IMAGE=$(tasks.build-container.results.IMAGE_URL)"]
   pipelineSpec:
     finally:
     - name: show-sbom
@@ -267,9 +265,12 @@ spec:
         value: $(params.image-expires-after)
       - name: COMMIT_SHA
         value: $(tasks.clone-repository.results.commit)
+      #- name: BUILD_ARGS
+      #  value:
+      #  - $(params.build-args[*])
       - name: BUILD_ARGS
         value:
-        - $(params.build-args[*])
+        - ["DRIVER_TOOLKIT_IMAGE=$(tasks.build-builder.results.IMAGE_URL)"] 
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
       runAfter:

@@ -270,7 +270,7 @@ spec:
       #  - $(params.build-args[*])
       - name: BUILD_ARGS
         value:
-        - ["DRIVER_TOOLKIT_IMAGE=$(tasks.build-builder.results.IMAGE_URL)"] 
+        - "DRIVER_TOOLKIT_IMAGE=$(tasks.build-builder.results.IMAGE_URL)" 
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
       runAfter:

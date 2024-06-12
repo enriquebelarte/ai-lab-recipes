@@ -33,7 +33,7 @@ spec:
   - name: dockerfile
     value: Containerfile
   - name: path-context
-    value: ai-lab-recipes/training/nvidia-bootc
+    value: ./ai-lab-recipes/training/nvidia-bootc
   pipelineSpec:
     finally:
     - name: show-sbom

@@ -29,9 +29,11 @@ spec:
   - name: image-expires-after
     value: 5d
   - name: dockerfile-builder
-    value: ai-lab-recipes/training/nvidia-bootc/Containerfile.builder
+    value: Containerfile.builder
   - name: dockerfile
-    value: ai-lab-recipes/training/nvidia-bootc/Containerfile
+    value: Containerfile
+  - name: path-context
+    value: ai-lab-recipes/training/nvidia-bootc
   pipelineSpec:
     finally:
     - name: show-sbom

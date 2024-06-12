@@ -18,6 +18,8 @@ metadata:
   namespace: ebelarte-tenant
 spec:
   params:
+  - name: PLATFORM
+    value: linux/amd64
   - name: git-url
     value: '{{source_url}}'
   - name: revision

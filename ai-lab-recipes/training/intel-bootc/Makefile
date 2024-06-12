@@ -11,13 +11,15 @@ bootc: growfs prepare-files
 		$(DRIVER_VERSION:%=--build-arg DRIVER_VERSION=%) \
 		$(EXTRA_RPM_PACKAGES:%=--build-arg EXTRA_RPM_PACKAGES=%) \
 		$(FROM:%=--build-arg BASEIMAGE=%) \
+		$(INSTRUCTLAB_IMAGE:%=--build-arg INSTRUCTLAB_IMAGE=%) \
 		$(KERNEL_VERSION:%=--build-arg KERNEL_VERSION=%) \
 		$(SOURCE_DATE_EPOCH:%=--timestamp=%) \
-		--build-arg "INSTRUCTLAB_IMAGE=$(INSTRUCTLAB_IMAGE)" \
-		--build-arg "VLLM_IMAGE=$(VLLM_IMAGE)" \
+		$(VLLM_IMAGE:%=--build-arg VLLM_IMAGE=%) \
+		$(SSH_PUBKEY:%=--build-arg SSHPUBKEY=%) \
 		--cap-add SYS_ADMIN \
 		--file Containerfile \
 		--security-opt label=disable \
 		--tag "${BOOTC_IMAGE}" \
 		-v ${OUTDIR}:/run/.input:ro \
 		${CONTAINER_TOOL_EXTRA_ARGS} .
+

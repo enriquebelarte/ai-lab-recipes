@@ -1,4 +1,5 @@
-FROM quay.io/centos/centos:stream9
+#FROM quay.io/centos/centos:stream9
+FROM registry.redhat.io/ubi9/ubi:9.4
 
 ARG KERNEL_VERSION=''
 ARG ENABLE_RT=''

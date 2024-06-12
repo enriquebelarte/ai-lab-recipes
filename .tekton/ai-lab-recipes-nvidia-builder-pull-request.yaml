@@ -219,7 +219,7 @@ spec:
       - name: DOCKERFILE
         value: $(params.dockerfile-builder)
       - name: CONTEXT
-        value: $(params.path-context)
+        value: (params.path-context)
       - name: HERMETIC
         value: $(params.hermetic)
       - name: PREFETCH_INPUT
@@ -256,7 +256,7 @@ spec:
       - name: DOCKERFILE
         value: $(params.dockerfile)
       - name: CONTEXT
-        value: $(params.path-context)
+        value: ai-lab-recipes/training/nvidia-bootc 
       - name: HERMETIC
         value: $(params.hermetic)
       - name: PREFETCH_INPUT

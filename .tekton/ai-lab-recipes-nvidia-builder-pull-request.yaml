@@ -23,11 +23,15 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
+    value: quay.io/redhat-user-workloads/ebelarte-tenant/nvidia-ai-lab-recipes/ai-lab-recipes-nvidia-driver:on-pr-{{revision}}
+  - name: output-image-builder
     value: quay.io/redhat-user-workloads/ebelarte-tenant/nvidia-ai-lab-recipes/ai-lab-recipes-nvidia-builder:on-pr-{{revision}}
   - name: image-expires-after
     value: 5d
+  - name: dockerfile-builder
+    value: Containerfile.builder
   - name: dockerfile
-    value: ai-lab-recipes/training/nvidia-bootc/Containerfile.builder
+    value: Containerfile
   pipelineSpec:
     finally:
     - name: show-sbom
@@ -76,7 +80,7 @@ spec:
     - description: Fully Qualified Output Image
       name: output-image
       type: string
-    - default: .
+    - default: /ai-lab-recipes/training/nvidia-bootc/ 
       description: Path to the source code of an application's component from where
         to build image.
       name: path-context
@@ -208,14 +212,14 @@ spec:
         workspace: workspace
       - name: git-basic-auth
         workspace: git-auth
-    - name: build-container
+    - name: build-builder
       params:
       - name: IMAGE
-        value: $(params.output-image)
+        value: $(params.output-image-builder)
       - name: DOCKERFILE
-        value: $(params.dockerfile)
+        value: $(params.dockerfile-builder)
       - name: CONTEXT
-        value: $(params.path-context)
+        value: (params.path-context)
       - name: HERMETIC
         value: $(params.hermetic)
       - name: PREFETCH_INPUT
@@ -224,9 +228,6 @@ spec:
         value: $(params.image-expires-after)
       - name: COMMIT_SHA
         value: $(tasks.clone-repository.results.commit)
-      - name: BUILD_ARGS
-        value:
-        - $(params.build-args[*])
       - name: BUILD_ARGS_FILE
         value: $(params.build-args-file)
       runAfter:
@@ -248,6 +249,50 @@ spec:
       workspaces:
       - name: source
         workspace: workspace
+    - name: build-container
+      params:
+      - name: IMAGE
+        value: $(params.output-image)
+      - name: DOCKERFILE
+        value: $(params.dockerfile)
+      - name: CONTEXT
+        value: $(params.path-context)
+      - name: HERMETIC
+        value: $(params.hermetic)
+      - name: PREFETCH_INPUT
+        value: $(params.prefetch-input)
+      - name: IMAGE_EXPIRES_AFTER
+        value: $(params.image-expires-after)
+      - name: COMMIT_SHA
+        value: $(tasks.clone-repository.results.commit)
+      #- name: BUILD_ARGS
+      #  value:
+      #  - $(params.build-args[*])
+      - name: BUILD_ARGS
+        value:
+        - "DRIVER_TOOLKIT_IMAGE=$(tasks.build-builder.results.IMAGE_URL)" 
+      - name: BUILD_ARGS_FILE
+        value: $(params.build-args-file)
+      runAfter:
+      - build-builder
+      taskRef:
+        params:
+        - name: name
+          value: buildah
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-buildah:0.1@sha256:0cb9100452e9640adbda75a6e23d2cc9c76d2408cbcf3183543b2a7582e39f02
+        - name: kind
+          value: task
+        resolver: bundles
+      when:
+      - input: $(tasks.init.results.build)
+        operator: in
+        values:
+        - "true"
+      workspaces:
+      - name: source
+        workspace: workspace
+
     - name: build-source-image
       params:
       - name: BINARY_IMAGE

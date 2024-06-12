@@ -22,7 +22,7 @@ COPY --chown=1001:0 x509-configuration.ini x509-configuration.ini
 RUN git clone --depth=1 --filter=blob:none --sparse https://github.com/containers/ai-lab-recipes /tmp/repo \
     && cd /tmp/repo \
     && git sparse-checkout set training/common/usr \
-    && mv training/common/usr/ /usr
+    && mv training/common/usr/ /
 RUN rm -rf /tmp/repo
 
 

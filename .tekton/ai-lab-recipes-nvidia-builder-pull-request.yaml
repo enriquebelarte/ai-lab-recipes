@@ -28,6 +28,8 @@ spec:
     value: 5d
   - name: dockerfile
     value: ai-lab-recipes/training/nvidia-bootc/Containerfile.builder
+  - name: path-context
+    value: .
   pipelineSpec:
     finally:
     - name: show-sbom

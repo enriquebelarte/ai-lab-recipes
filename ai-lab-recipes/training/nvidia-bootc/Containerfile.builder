@@ -1,4 +1,5 @@
-FROM quay.io/centos/centos:stream9
+ARG BASEIMAGE='quay.io/centos/centos:stream9'
+FROM ${BASEIMAGE}
 
 ARG KERNEL_VERSION=''
 ARG ENABLE_RT=''

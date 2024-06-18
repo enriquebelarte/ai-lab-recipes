@@ -1,4 +1,4 @@
-ARG BASEIMAGE='quay.io/centos/centos:stream9'
+ARG BASEIMAGE='registry.access.redhat.com/ubi9/ubi:9.4'
 FROM ${BASEIMAGE}
 
 ARG KERNEL_VERSION=''

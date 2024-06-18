@@ -278,6 +278,8 @@ spec:
         value: $(params.build-args-file)
       - name: PLATFORM
         value: linux/amd64
+      - name: BASE_IMAGE
+        value: registry.redhat.io/rhel9/rhel-bootc:9.4
       runAfter:
       - build-builder
       taskRef:

@@ -26,7 +26,9 @@ instructlab:
 .PHONY: nvidia
 nvidia: instructlab
 	rm -rf ../build/instructlab-$@
-	"${CONTAINER_TOOL}"  build --layers=false --squash -t oci:../build/instructlab-$@ instructlab/containers/cuda
+	"${CONTAINER_TOOL}"  build --squash-all -t quay.io/ebelarte/rhel-ai:instructlab-$@ instructlab/containers/cuda
+
+
 
 .PHONY: amd
 amd: instructlab

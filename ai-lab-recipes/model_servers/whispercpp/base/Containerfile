@@ -16,8 +16,8 @@ COPY --from=builder /app /app
 
 # https://github.com/wader/static-ffmpeg
 # https://hub.docker.com/r/mwader/static-ffmpeg/
-COPY --from=mwader/static-ffmpeg:6.1.1 /ffmpeg /bin/
-COPY --from=mwader/static-ffmpeg:6.1.1 /ffprobe /bin/
+COPY --from=mwader/static-ffmpeg:7.0.1 /ffmpeg /bin/
+COPY --from=mwader/static-ffmpeg:7.0.1 /ffprobe /bin/
 
 COPY src /app/
 ENV AUDIO_FILE=/app/jfk.wav
